@@ -6,9 +6,9 @@ import 'package:hello_euc/services/location_service.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 
 class ActivityDetailsScreen extends StatefulWidget {
-  final Map<String, dynamic> reccord;
+  final Activity activity;
 
-  const ActivityDetailsScreen({super.key, required this.reccord});
+  const ActivityDetailsScreen({super.key, required this.activity});
 
   @override
   State<StatefulWidget> createState() {
@@ -22,11 +22,15 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
   List<LatLng> points = [];
   final _form = GlobalKey<FormState>();
   final TextEditingController _activityNameController = TextEditingController();
+  late Activity activity;
 
   void _onMapCreated(MaplibreMapController controller) {
     mapController = controller;
+  }
+
+  void _onStyleLoaded() {
     mapController.resizeWebMap();
-    mapController.addGeoJsonSource("activity", widget.reccord);
+    mapController.addGeoJsonSource("activity", widget.activity.geojson);
     mapController.addLineLayer("activity", "activity",
         const LineLayerProperties(lineColor: "#ff0000", lineWidth: 3.0));
 
@@ -43,7 +47,9 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
   @override
   void initState() {
     setState(() {
-      points = widget.reccord['features'][0]['geometry']['coordinates']
+      activity = widget.activity;
+      _activityNameController.text = widget.activity.name ?? "";
+      points = widget.activity.geojson['features'][0]['geometry']['coordinates']
           .map((e) => LatLng(e[1], e[0]))
           .toList()
           .cast<LatLng>();
@@ -60,7 +66,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
 
     return Scaffold(
         appBar: AppBar(
-          title: const Text('Activity Details'),
+          title: Text(activity.name ?? "New Activity"),
         ),
         body: Padding(
             padding: const EdgeInsets.only(left: 15.0, right: 15.0),
@@ -70,8 +76,8 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    const Text("New Activity"),
                     TextFormField(
+                      readOnly: widget.activity.name != null,
                       controller: _activityNameController,
                       autovalidateMode: AutovalidateMode.onUserInteraction,
                       decoration:
@@ -80,6 +86,11 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                         if (value == null || value.isEmpty) {
                           return 'Please enter some text';
                         }
+
+                        if (GetIt.I<ActivityCrud>().getByName(value) != null) {
+                          return 'Activity with this name already exists';
+                        }
+
                         return null;
                       },
                     ),
@@ -93,16 +104,20 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                               styleString:
                                   'https://tiles.stadiamaps.com/styles/alidade_smooth${brightness == Brightness.dark ? '_dark' : ''}.json?api_key=${const String.fromEnvironment('STADIA_API_KEY')}',
                               onMapCreated: _onMapCreated,
+                              onStyleLoadedCallback: _onStyleLoaded,
                             ))),
                     ElevatedButton(
                         onPressed: () {
-                          if (_form.currentState == null ||
+                          if (widget.activity.name != null ||
+                              _form.currentState == null ||
                               !_form.currentState!.validate()) return;
                           GetIt.I<ActivityCrud>().insert(Activity(
-                              _activityNameController.text, widget.reccord));
+                              _activityNameController.text,
+                              activity.locations));
                           Navigator.pop(context);
                         },
-                        child: const Text("Save"))
+                        child: Text(
+                            widget.activity.name == null ? "Save" : "Update"))
                   ],
                 ))));
   }

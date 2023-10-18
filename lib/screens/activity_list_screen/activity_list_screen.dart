@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:hello_euc/crud/activity_crud.dart';
 import 'package:hello_euc/models/activity.dart';
+import 'package:hello_euc/screens/activity_details_screen/activity_details_screen.dart';
 
 class ActivityListScreen extends StatefulWidget {
   static const String routeName = "/activity-list-screen";
@@ -17,9 +18,9 @@ class _ActivityListScreenState extends State<ActivityListScreen> {
 
   @override
   void initState() {
-    GetIt.I<ActivityCrud>().getAll().then((activities) => setState(() {
-          this.activities = activities;
-        }));
+    setState(() {
+      activities = GetIt.I<ActivityCrud>().getAll();
+    });
     super.initState();
   }
 
@@ -33,18 +34,23 @@ class _ActivityListScreenState extends State<ActivityListScreen> {
             ? ListView.builder(
                 itemBuilder: (context, index) {
                   return ListTile(
-                    title: Text(activities[index].name),
+                    title: Text(activities[index].name ?? "(unnamed)"),
                     trailing: IconButton(
                         icon: const Icon(Icons.delete),
                         onPressed: () async {
                           await GetIt.I<ActivityCrud>()
                               .remove(activities[index]);
-                          GetIt.I<ActivityCrud>()
-                              .getAll()
-                              .then((activities) => setState(() {
-                                    this.activities = activities;
-                                  }));
+                          setState(() {
+                            activities = GetIt.I<ActivityCrud>().getAll();
+                          });
                         }),
+                    onTap: () => {
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => ActivityDetailsScreen(
+                                  activity: activities[index])))
+                    },
                   );
                 },
                 itemCount: activities.length,

@@ -77,7 +77,9 @@ class _MapComponentState extends State<MapComponent>
   void _onMapCreated(MaplibreMapController controller) async {
     mapController = controller;
     db = await SharedPreferences.getInstance();
+  }
 
+  void _onStyleLoaded() async {
     await _littleThumbInit();
     locationService.onLocationChanged(_littleThumb);
   }
@@ -99,7 +101,7 @@ class _MapComponentState extends State<MapComponent>
   }
 
   void _littleThumb(LocationData location) async {
-    updateLayer('currentReccord', locationService.getCurrentReccord(),
+    updateLayer('currentReccord', locationService.getCurrentActivity()?.geojson,
         const LineLayerProperties(lineColor: '#007AFF', lineWidth: 4));
 
     if (settings.get('littleThumb') == null || !settings.get('littleThumb')) {
@@ -182,6 +184,7 @@ class _MapComponentState extends State<MapComponent>
     return Scaffold(
         body: MaplibreMap(
           onMapCreated: _onMapCreated,
+          onStyleLoadedCallback: _onStyleLoaded,
           initialCameraPosition:
               const CameraPosition(target: LatLng(0.0, 0.0), zoom: 0.0),
           styleString:
