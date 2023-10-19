@@ -65,18 +65,20 @@ class _AppState extends State<App> {
             labelColor: Colors.white,
           ),
           floatingActionButton: FloatingActionButton(
+              heroTag: null,
               foregroundColor: Colors.redAccent,
               backgroundColor: Colors.white,
               onPressed: () {
                 setState(() {
-                  GetIt.I<LocationService>().getCurrentReccord() == null
+                  GetIt.I<LocationService>().getCurrentActivity() == null
                       ? GetIt.I<LocationService>().startRecording()
                       : GetIt.I<LocationService>().stopRecording(context);
                 });
               },
-              child: Icon(GetIt.I<LocationService>().getCurrentReccord() == null
-                  ? Icons.radio_button_checked
-                  : Icons.square)),
+              child: Icon(
+                  GetIt.I<LocationService>().getCurrentActivity() == null
+                      ? Icons.radio_button_checked
+                      : Icons.square)),
           floatingActionButtonLocation:
               FloatingActionButtonLocation.centerDocked,
         ));

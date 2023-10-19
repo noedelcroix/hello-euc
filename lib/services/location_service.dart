@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hello_euc/models/activity.dart';
 import 'package:hello_euc/screens/activity_details_screen/activity_details_screen.dart';
 import 'package:location/location.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
@@ -6,7 +7,7 @@ import 'package:maplibre_gl/maplibre_gl.dart';
 class LocationService {
   late Location location;
   LocationData? lastKnownLocation;
-  Map<String, dynamic>? currentReccord;
+  Activity? currentActivity;
 
   LocationService() {
     location = Location();
@@ -46,7 +47,7 @@ class LocationService {
   onLocationChanged(Function(LocationData) callback) {
     location.onLocationChanged.listen((LocationData currentLocation) {
       lastKnownLocation = currentLocation;
-      if (currentReccord != null) {
+      if (currentActivity != null) {
         addStepToCurrentReccord(currentLocation);
       }
       callback(currentLocation);
@@ -54,15 +55,7 @@ class LocationService {
   }
 
   startRecording() async {
-    currentReccord = {
-      "type": "FeatureCollection",
-      "features": [
-        {
-          "type": "Feature",
-          "geometry": {"type": "LineString", "coordinates": []}
-        }
-      ]
-    };
+    currentActivity = Activity(null, []);
 
     if (lastKnownLocation != null) {
       addStepToCurrentReccord(lastKnownLocation!);
@@ -70,23 +63,28 @@ class LocationService {
   }
 
   addStepToCurrentReccord(LocationData currentLocation) {
-    currentReccord?['features'][0]['geometry']['coordinates']
-        .add([currentLocation.longitude, currentLocation.latitude]);
+    currentActivity?.addLocation(currentLocation);
   }
 
-  Map<String, dynamic>? getCurrentReccord() {
-    return currentReccord;
+  Activity? getCurrentActivity() {
+    return currentActivity;
   }
 
-  Map<String, dynamic> stopRecording(BuildContext context) {
-    Map<String, dynamic> reccord = currentReccord!;
-    Navigator.push(
+  Future<void> stopRecording(BuildContext context) async {
+    if (currentActivity == null) {
+      return;
+    }
+
+    Activity activity = currentActivity!;
+    currentActivity = null;
+
+    await Navigator.push(
       context,
       MaterialPageRoute(
-          builder: (context) => ActivityDetailsScreen(reccord: reccord)),
+          builder: (context) => ActivityDetailsScreen(
+                activity: activity,
+              )),
     );
-    currentReccord = null;
-    return reccord;
   }
 
   static List<LatLng> getBounds(List<LatLng> points) {
