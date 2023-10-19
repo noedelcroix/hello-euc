@@ -26,7 +26,6 @@ class ActivityCrud {
 
   List<Activity> getAll() {
     String? data = db.getString("activities");
-    print(data);
     return Activity.decode(data ?? "[]");
   }
 
