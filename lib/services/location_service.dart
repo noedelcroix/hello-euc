@@ -55,7 +55,7 @@ class LocationService {
   }
 
   startRecording() async {
-    currentActivity = Activity(null, []);
+    currentActivity = Activity(null, null, []);
 
     if (lastKnownLocation != null) {
       addStepToCurrentReccord(lastKnownLocation!);

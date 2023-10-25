@@ -12,13 +12,7 @@ class ActivityCrud {
 
   Future<void> insert(Activity activity) async {
     List<Activity> activities = getAll();
-    if (activities
-            .firstWhere((element) => element.name == activity.name,
-                orElse: () => Activity(null, []))
-            .name !=
-        null) {
-      await remove(activity);
-    }
+    activities.removeWhere((element) => element.name == activity.name);
 
     activities.add(activity);
     await db.setString("activities", activities.toString());
