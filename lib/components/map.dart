@@ -154,10 +154,18 @@ class _MapComponentState extends State<MapComponent>
   @override
   void initState() {
     settings.init().then((value) => setState(() {}));
-    settings.onChange(() {
-      setState(() {});
-      mapController.setLayerVisibility(
-          'littleThumb', settings.get('littleThumb'));
+    settings.onChange((Map e) {
+      if (e.containsKey('clearLittleThumb')) {
+        setState(() {
+          littleThumbPoints = {"type": "FeatureCollection", "features": []};
+        });
+
+        _littleThumbInit();
+      } else {
+        setState(() {});
+        mapController.setLayerVisibility(
+            'littleThumb', settings.get('littleThumb'));
+      }
     });
     locationService.requestAll();
     super.initState();

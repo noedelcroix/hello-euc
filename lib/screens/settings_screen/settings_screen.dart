@@ -34,7 +34,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   onToggle: (value) {
                     setState(() => settings.set("littleThumb", value));
                   },
-                  title: const Text("Enable Little Thumb"))
+                  title: const Text("Enable Little Thumb")),
+              SettingsTile.navigation(
+                  title: const Text("Clear little thumb"),
+                  leading: const Icon(Icons.delete),
+                  onPressed: (context) async {
+                    await settings.clearLittleThumb();
+                    setState(() {});
+                  })
             ],
           ),
         ],

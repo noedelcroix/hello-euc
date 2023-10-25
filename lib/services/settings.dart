@@ -26,9 +26,14 @@ class Settings {
     eventEmitter.add({key: value});
   }
 
+  clearLittleThumb() async {
+    await db.remove("littleThumb");
+    eventEmitter.add({"clearLittleThumb": null});
+  }
+
   onChange(Function callback) {
     eventEmitter.stream.listen((event) {
-      callback();
+      callback(event);
     });
   }
 }
