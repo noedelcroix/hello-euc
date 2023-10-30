@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get_it/get_it.dart';
 import 'package:hello_euc/crud/activity_crud.dart';
 import 'package:hello_euc/screens/activity_list_screen/activity_list_screen.dart';
@@ -20,14 +21,15 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeSingletions();
   await initializeFlutterGun();
-  runApp(MaterialApp(
-      title: 'Hello EUC',
-      debugShowCheckedModeBanner: false,
-      home: const App(),
-      routes: {
-        '/map': (context) => const MapScreen(),
-        '/settings': (context) => const SettingsScreen()
-      }));
+  SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]).then(
+      (value) => runApp(MaterialApp(
+              title: 'Hello EUC',
+              debugShowCheckedModeBanner: false,
+              home: const App(),
+              routes: {
+                '/map': (context) => const MapScreen(),
+                '/settings': (context) => const SettingsScreen()
+              })));
 }
 
 class App extends StatefulWidget {

@@ -1,11 +1,12 @@
 import 'dart:convert';
 import 'dart:ui';
 
+import 'package:collection/collection.dart';
 import 'package:hello_euc/models/enums/export_type.dart';
 import 'package:location/location.dart';
 
 class Activity {
-  final String? name;
+  String? name;
   Color? color;
   final List<LocationData> locations;
 
@@ -36,6 +37,7 @@ class Activity {
       data['locations'].add({
         'latitude': location.latitude,
         'longitude': location.longitude,
+        'altitude': location.altitude,
         'speed': location.speed,
         'heading': location.heading,
         'time': location.time
@@ -106,5 +108,23 @@ class Activity {
 
   addLocation(LocationData location) {
     locations.add(location);
+  }
+
+  static Duration computeDuration(LocationData start, LocationData end) {
+    return DateTime.fromMillisecondsSinceEpoch(end.time!.toInt())
+        .difference(DateTime.fromMillisecondsSinceEpoch(start.time!.toInt()));
+  }
+
+  int get maxSpeed {
+    return (locations
+                .map((e) => e.speed ?? 0.0)
+                .reduce((value, element) => value > element ? value : element) *
+            3.6)
+        .toInt();
+  }
+
+  int get averageSpeed {
+    List<double> speeds = locations.map((e) => e.speed ?? 0.0).toList();
+    return (speeds.sum / speeds.length * 3.6).toInt();
   }
 }

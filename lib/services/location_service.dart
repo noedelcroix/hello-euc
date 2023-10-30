@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:hello_euc/models/activity.dart';
 import 'package:hello_euc/screens/activity_details_screen/activity_details_screen.dart';
@@ -71,7 +73,7 @@ class LocationService {
   }
 
   Future<void> stopRecording(BuildContext context) async {
-    if (currentActivity == null) {
+    if (currentActivity == null || currentActivity?.locations.isEmpty == true) {
       return;
     }
 
@@ -104,5 +106,45 @@ class LocationService {
     }
 
     return [LatLng(minLng, minLat), LatLng(maxLng, maxLat)];
+  }
+
+  static double calculateDistance(LocationData pos1, LocationData pos2) {
+    if (pos1.latitude == null ||
+        pos1.longitude == null ||
+        pos2.latitude == null ||
+        pos2.longitude == null) {
+      return 0;
+    }
+    var p = 0.017453292519943295;
+    var c = cos;
+    var a = 0.5 -
+        c((pos2.latitude! - pos1.latitude!) * p) / 2 +
+        c(pos1.latitude! * p) *
+            c(pos2.latitude! * p) *
+            (1 - c((pos2.longitude! - pos1.longitude!) * p)) /
+            2;
+    return 12742 * asin(sqrt(a));
+  }
+
+  static double calculateTotalDistance(List<LocationData> locations) {
+    double totalDistance = 0;
+    for (int i = 0; i < locations.length - 1; i++) {
+      totalDistance += calculateDistance(locations[i], locations[i + 1]);
+    }
+    return totalDistance;
+  }
+
+  static double calculateAltitudeDifference(List<LocationData> locations) {
+    double minAltitude = locations[0].altitude!;
+    double maxAltitude = locations[0].altitude!;
+
+    for (var location in locations) {
+      minAltitude =
+          location.altitude! < minAltitude ? location.altitude! : minAltitude;
+      maxAltitude =
+          location.altitude! > maxAltitude ? location.altitude! : maxAltitude;
+    }
+
+    return maxAltitude - minAltitude;
   }
 }
