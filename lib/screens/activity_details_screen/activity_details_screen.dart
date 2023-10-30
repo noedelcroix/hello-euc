@@ -1,15 +1,13 @@
-import 'dart:io';
-
-import 'package:easy_folder_picker/FolderPicker.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:get_it/get_it.dart';
+import 'package:hello_euc/components/colorpick.dart';
+import 'package:hello_euc/components/export.dart';
+import 'package:hello_euc/components/gap.dart';
+import 'package:hello_euc/components/statistics.dart';
 import 'package:hello_euc/crud/activity_crud.dart';
 import 'package:hello_euc/models/activity.dart';
-import 'package:hello_euc/models/enums/export_type.dart';
 import 'package:hello_euc/services/location_service.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 class ActivityDetailsScreen extends StatefulWidget {
   final Activity activity;
@@ -57,21 +55,25 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
 
   @override
   void initState() {
+    _activityNameController.text = widget.activity.name ?? "";
     setState(() {
       activity = widget.activity;
-      _activityNameController.text = widget.activity.name ?? "";
-      points = widget.activity.geojson['features'][0]['geometry']['coordinates']
-          .map((e) => LatLng(e[1], e[0]))
-          .toList()
-          .cast<LatLng>();
     });
+    activity.color = widget.activity.color ?? Colors.blue;
+    points = widget.activity.geojson['features'][0]['geometry']['coordinates']
+        .map((e) => LatLng(e[1], e[0]))
+        .toList()
+        .cast<LatLng>();
 
     super.initState();
   }
 
   _onColorChanged(Color color) {
-    setState(() => activity.color = color);
-    saveActivity();
+    setState(() {
+      if (activity.name != null) {
+        saveActivity();
+      }
+    });
     mapController.removeLayer("activity");
     mapController.addLineLayer(
         "activity",
@@ -85,40 +87,6 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
   saveActivity() {
     GetIt.I<ActivityCrud>().insert(Activity(
         _activityNameController.text, activity.color, activity.locations));
-  }
-
-  export(ExportType type) async {
-    PermissionStatus status = await Permission.manageExternalStorage.request();
-
-    if (status != PermissionStatus.granted || !context.mounted) {
-      return;
-    }
-
-    Directory? directory = await FolderPicker.pick(
-      allowFolderCreation: true,
-      rootDirectory: Directory(FolderPicker.rootPath),
-      context: context,
-    );
-
-    if (directory == null || !context.mounted) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text("No directory selected")));
-      return;
-    }
-
-    if ((widget.activity.name ?? _activityNameController.text).isEmpty) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text("No activity name.")));
-      return;
-    }
-
-    File file = File(
-        "${directory.path}/${widget.activity.name ?? _activityNameController.text}.${type.extension}");
-
-    file.writeAsStringSync(activity.getFileContent(type));
-
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text("${file.path} saved.")));
   }
 
   @override
@@ -135,7 +103,8 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
         body: LayoutBuilder(
             builder: (context, constraints) => SingleChildScrollView(
                 child: Padding(
-                    padding: const EdgeInsets.only(left: 30.0, right: 30.0),
+                    padding: const EdgeInsets.only(
+                        left: 30.0, right: 30.0, top: 30.0),
                     child: Form(
                         autovalidateMode: AutovalidateMode.onUserInteraction,
                         key: _form,
@@ -169,48 +138,12 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                                           return null;
                                         },
                                       )),
-                                  ElevatedButton(
-                                      style: ButtonStyle(
-                                          backgroundColor:
-                                              activity.color != null
-                                                  ? MaterialStateProperty.all(
-                                                      activity.color)
-                                                  : null),
-                                      onPressed: () => showDialog(
-                                          context: context,
-                                          builder: (context) => AlertDialog(
-                                                title:
-                                                    const Text("Color Picker"),
-                                                content: ConstrainedBox(
-                                                    constraints: BoxConstraints(
-                                                        maxHeight: constraints
-                                                                .maxHeight /
-                                                            2),
-                                                    child: ColorPicker(
-                                                        colorPickerWidth:
-                                                            constraints
-                                                                    .maxWidth /
-                                                                2,
-                                                        paletteType: PaletteType
-                                                            .hueWheel,
-                                                        labelTypes: [],
-                                                        enableAlpha: false,
-                                                        pickerColor:
-                                                            activity.color ??
-                                                                const Color(
-                                                                    0xFF000000),
-                                                        onColorChanged:
-                                                            _onColorChanged)),
-                                                actions: [
-                                                  TextButton(
-                                                    onPressed: () =>
-                                                        Navigator.pop(context),
-                                                    child: const Text("Close"),
-                                                  )
-                                                ],
-                                              )),
-                                      child: null)
+                                  ColorPick(
+                                      activity: activity,
+                                      constraints: constraints,
+                                      onColorChanged: _onColorChanged)
                                 ]),
+                            Gap(),
                             ConstrainedBox(
                                 constraints: BoxConstraints(
                                     maxHeight: constraints.maxWidth / 2),
@@ -238,18 +171,9 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                                     Navigator.pop(context);
                                   },
                                   child: const Text("Save")),
-                            Column(
-                              children: [
-                                const Text("Export"),
-                                OverflowBar(
-                                  children: ExportType.values
-                                      .map((e) => TextButton(
-                                          onPressed: () => export(e),
-                                          child: Text(e.toString())))
-                                      .toList(),
-                                )
-                              ],
-                            )
+                            Statistics(
+                                constraints: constraints, activity: activity),
+                            Export(activity: activity)
                           ],
                         ))))));
   }
