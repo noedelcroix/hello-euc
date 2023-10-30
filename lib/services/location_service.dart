@@ -5,6 +5,7 @@ import 'package:hello_euc/models/activity.dart';
 import 'package:hello_euc/screens/activity_details_screen/activity_details_screen.dart';
 import 'package:location/location.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
+import 'package:optimize_battery/optimize_battery.dart';
 
 class LocationService {
   late Location location;
@@ -29,13 +30,23 @@ class LocationService {
       permission = await location.hasPermission();
     }
 
-    while (!await location.isBackgroundModeEnabled()) {
-      await location.enableBackgroundMode(enable: true);
+    bool r = await location.serviceEnabled();
+    while (!r) {
+      r = await location.enableBackgroundMode(enable: true);
     }
+
+    requestBatteryOptimization();
   }
 
   requestEnableServiceOnce() async {
     await location.requestService();
+  }
+
+  requestBatteryOptimization() async {
+    bool r = await OptimizeBattery.isIgnoringBatteryOptimizations();
+    while (!r) {
+      r = await OptimizeBattery.stopOptimizingBatteryUsage();
+    }
   }
 
   getServiceAvailability() async {
