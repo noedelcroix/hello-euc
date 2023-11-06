@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:get_it/get_it.dart';
 import 'package:hello_euc/crud/activity_crud.dart';
 import 'package:hello_euc/models/activity.dart';
@@ -44,13 +45,8 @@ class _ActivityListScreenState extends State<ActivityListScreen> {
                             activities = GetIt.I<ActivityCrud>().getAll();
                           });
                         }),
-                    onTap: () => {
-                      Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => ActivityDetailsScreen(
-                                  activity: activities[index])))
-                    },
+                    onTap: () => Get.to(
+                        ActivityDetailsScreen(activity: activities[index])),
                   );
                 },
                 itemCount: activities.length,

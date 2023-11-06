@@ -7,6 +7,7 @@ import 'package:hello_euc/services/location_service.dart';
 import 'package:hello_euc/services/settings.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:wakelock/wakelock.dart';
 
 class MapComponent extends StatefulWidget {
   final Function notifySpeed;
@@ -47,7 +48,7 @@ class _MapComponentState extends State<MapComponent>
 
   void _toggleTracking() async {
     lock = true;
-    if (!await Geolocator.isLocationServiceEnabled()) {
+    if (!await LocationService().requestEnableServiceOnce()) {
       lock = false;
       return;
     }
@@ -166,18 +167,18 @@ class _MapComponentState extends State<MapComponent>
             'littleThumb', settings.get('littleThumb'));
       }
     });
-    locationService.requestEnableServiceOnce();
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
+    Wakelock.enable();
     super.build(context);
     setState(() {
       brightness = View.of(context).platformDispatcher.platformBrightness;
     });
 
-    locationService.requestEnableServiceOnce().then((value) {
+    locationService.isServiceEnabled().then((value) {
       if (!mounted) return;
       setState(() {
         locationEnabled = value;
