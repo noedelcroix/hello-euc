@@ -1,10 +1,10 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:get_it/get_it.dart';
 import 'package:hello_euc/services/location_service.dart';
 import 'package:hello_euc/services/settings.dart';
-import 'package:location/location.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -47,8 +47,7 @@ class _MapComponentState extends State<MapComponent>
 
   void _toggleTracking() async {
     lock = true;
-    if (!await locationService.getServiceAvailability()) {
-      locationService.requestAll();
+    if (!await Geolocator.isLocationServiceEnabled()) {
       lock = false;
       return;
     }
@@ -100,7 +99,7 @@ class _MapComponentState extends State<MapComponent>
             iconImage: 'assets/images/little_thumb.png', iconSize: 0.1));
   }
 
-  void _littleThumb(LocationData location) async {
+  void _littleThumb(Position location) async {
     updateLayer('currentReccord', locationService.getCurrentActivity()?.geojson,
         const LineLayerProperties(lineColor: '#007AFF', lineWidth: 4));
 
@@ -167,7 +166,7 @@ class _MapComponentState extends State<MapComponent>
             'littleThumb', settings.get('littleThumb'));
       }
     });
-    locationService.requestAll();
+    locationService.requestEnableServiceOnce();
     super.initState();
   }
 
@@ -178,7 +177,7 @@ class _MapComponentState extends State<MapComponent>
       brightness = View.of(context).platformDispatcher.platformBrightness;
     });
 
-    locationService.getServiceAvailability().then((value) {
+    locationService.requestEnableServiceOnce().then((value) {
       if (!mounted) return;
       setState(() {
         locationEnabled = value;

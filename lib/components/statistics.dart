@@ -68,12 +68,11 @@ class _StatisticsState extends State<Statistics> {
           child: Chart(
             data: widget.activity.locations
                 .map((e) =>
-                    {'speed': ((e.speed ?? 0) * 3.6).toInt(), 'time': e.time})
+                    {'speed': ((e.speed) * 3.6).toInt(), 'time': e.timestamp})
                 .toList(),
             variables: {
               'time': Variable(
-                  accessor: (Map map) =>
-                      DateTime.fromMillisecondsSinceEpoch(map['time'].toInt()),
+                  accessor: (Map map) => map['time'] as DateTime,
                   scale: TimeScale(
                       formatter: (time) => DateFormat.Hms().format(time))),
               'speed': Variable(accessor: (Map map) => map['speed'] as num),
@@ -97,7 +96,7 @@ class _StatisticsState extends State<Statistics> {
                 .asMap()
                 .entries
                 .map((entry) => {
-                      'altitude': entry.value.altitude ?? 0,
+                      'altitude': entry.value.altitude,
                       'distance': LocationService.calculateTotalDistance(
                           widget.activity.locations.sublist(0, entry.key + 1))
                     })

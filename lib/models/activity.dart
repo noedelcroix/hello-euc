@@ -2,25 +2,37 @@ import 'dart:convert';
 import 'dart:ui';
 
 import 'package:collection/collection.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:hello_euc/models/enums/export_type.dart';
-import 'package:location/location.dart';
 
 class Activity {
   String? name;
   Color? color;
-  final List<LocationData> locations;
+  final List<Position> locations;
 
   Activity(this.name, this.color, this.locations);
 
   static List<Activity> decode(String data) {
     List<Activity> activities = [];
     List<dynamic> decodedData = json.decode(data);
+
     for (var item in decodedData) {
       activities.add(Activity(
           item['name'],
           Color(int.parse(item['color'] ?? 'ff000000', radix: 16)),
           (item['locations'] as List)
-              .map((e) => LocationData.fromMap(e))
+              .map((e) => Position(
+                  longitude: e["longitude"],
+                  latitude: e["latitude"],
+                  timestamp:
+                      DateTime.fromMicrosecondsSinceEpoch(e["timestamp"]),
+                  altitude: e["altitude"],
+                  heading: e["heading"],
+                  speed: e["speed"],
+                  accuracy: 0.0,
+                  altitudeAccuracy: 0.0,
+                  headingAccuracy: 0.0,
+                  speedAccuracy: 0.0))
               .toList()));
     }
     return activities;
@@ -33,14 +45,14 @@ class Activity {
       'locations': [],
       'color': color?.value.toRadixString(16)
     };
-    for (LocationData location in locations) {
+    for (Position location in locations) {
       data['locations'].add({
         'latitude': location.latitude,
         'longitude': location.longitude,
         'altitude': location.altitude,
         'speed': location.speed,
         'heading': location.heading,
-        'time': location.time
+        'timestamp': location.timestamp?.microsecondsSinceEpoch ?? 0
       });
     }
 
@@ -84,7 +96,7 @@ class Activity {
       <LineString>
         <tessellate>1</tessellate>
         <coordinates>
-        ${locations.map((position) => "${position.longitude},${position.latitude},${position.altitude?.toInt() ?? 1}").join('\n')}
+        ${locations.map((position) => "${position.longitude},${position.latitude},${position.altitude.toInt()}").join('\n')}
         </coordinates>
       </LineString>
     </Placemark>
@@ -106,25 +118,28 @@ class Activity {
     }
   }
 
-  addLocation(LocationData location) {
+  addLocation(Position location) {
     locations.add(location);
   }
 
-  static Duration computeDuration(LocationData start, LocationData end) {
-    return DateTime.fromMillisecondsSinceEpoch(end.time!.toInt())
-        .difference(DateTime.fromMillisecondsSinceEpoch(start.time!.toInt()));
+  static Duration computeDuration(Position start, Position end) {
+    if (start.timestamp == null || end.timestamp == null) {
+      return Duration.zero;
+    }
+
+    return end.timestamp!.difference(start.timestamp!);
   }
 
   int get maxSpeed {
     return (locations
-                .map((e) => e.speed ?? 0.0)
+                .map((e) => e.speed)
                 .reduce((value, element) => value > element ? value : element) *
             3.6)
         .toInt();
   }
 
   int get averageSpeed {
-    List<double> speeds = locations.map((e) => e.speed ?? 0.0).toList();
+    List<double> speeds = locations.map((e) => e.speed).toList();
     return (speeds.sum / speeds.length * 3.6).toInt();
   }
 }
