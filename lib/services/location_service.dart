@@ -2,32 +2,21 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:get/get.dart';
 import 'package:hello_euc/models/activity.dart';
 import 'package:hello_euc/screens/activity_details_screen/activity_details_screen.dart';
+import 'package:location/location.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
-import 'package:optimize_battery/optimize_battery.dart';
 
 class LocationService {
   Activity? currentActivity;
 
-  Future<LocationPermission> requestPermission() async {
-    LocationPermission permission = await Geolocator.checkPermission();
-    while (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-    }
-
-    return permission;
-  }
-
   Future<bool> requestEnableServiceOnce() async {
-    return await Geolocator.isLocationServiceEnabled();
+    return await Location().requestService();
   }
 
-  requestBatteryOptimization() async {
-    bool r = await OptimizeBattery.isIgnoringBatteryOptimizations();
-    while (!r) {
-      r = await OptimizeBattery.stopOptimizingBatteryUsage();
-    }
+  Future<bool> isServiceEnabled() async {
+    return await Location().serviceEnabled();
   }
 
   onLocationChanged(Function(Position) callback) {
@@ -66,14 +55,9 @@ class LocationService {
 
     Activity activity = currentActivity!;
     currentActivity = null;
-
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-          builder: (context) => ActivityDetailsScreen(
-                activity: activity,
-              )),
-    );
+    Get.to(ActivityDetailsScreen(
+      activity: activity,
+    ));
   }
 
   static List<LatLng> getBounds(List<LatLng> points) {

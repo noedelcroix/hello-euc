@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:get_it/get_it.dart';
 import 'package:hello_euc/components/colorpick.dart';
 import 'package:hello_euc/components/export.dart';
@@ -143,7 +144,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                                       constraints: constraints,
                                       onColorChanged: _onColorChanged)
                                 ]),
-                            Gap(),
+                            const Gap(),
                             ConstrainedBox(
                                 constraints: BoxConstraints(
                                     maxHeight: constraints.maxWidth / 2),
@@ -168,7 +169,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                                       return;
                                     }
                                     saveActivity();
-                                    Navigator.pop(context);
+                                    Get.back();
                                   },
                                   child: const Text("Save")),
                             Statistics(
