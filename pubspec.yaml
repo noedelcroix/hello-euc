@@ -16,6 +16,7 @@ dependencies:
   get_it: ^7.6.4
   graphic: ^2.2.1
   intl: ^0.18.1
+  intro_slider: ^4.2.1
   location: ^5.0.3
   maplibre_gl:
       git:
