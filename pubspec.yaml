@@ -13,10 +13,10 @@ dependencies:
     sdk: flutter
   flutter_colorpicker: ^1.0.3
   flutter_gundb: ^0.0.3
+  geolocator: ^10.1.0
   get_it: ^7.6.4
   graphic: ^2.2.1
   intl: ^0.18.1
-  location: ^5.0.3
   maplibre_gl:
       git:
         url: https://github.com/maplibre/flutter-maplibre-gl.git

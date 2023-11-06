@@ -1,45 +1,26 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:hello_euc/models/activity.dart';
 import 'package:hello_euc/screens/activity_details_screen/activity_details_screen.dart';
-import 'package:location/location.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 import 'package:optimize_battery/optimize_battery.dart';
 
 class LocationService {
-  late Location location;
-  LocationData? lastKnownLocation;
   Activity? currentActivity;
 
-  LocationService() {
-    location = Location();
-    location.enableBackgroundMode(enable: true);
-  }
-
-  requestAll() async {
-    await LocationService().requestPermissionInfinitly();
-    await LocationService().requestEnableServiceOnce();
-    return getServiceAvailability();
-  }
-
-  requestPermissionInfinitly() async {
-    PermissionStatus permission = await location.hasPermission();
-    while (permission == PermissionStatus.denied) {
-      await location.requestPermission();
-      permission = await location.hasPermission();
+  Future<LocationPermission> requestPermission() async {
+    LocationPermission permission = await Geolocator.checkPermission();
+    while (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
     }
 
-    bool r = await location.serviceEnabled();
-    while (!r) {
-      r = await location.enableBackgroundMode(enable: true);
-    }
-
-    requestBatteryOptimization();
+    return permission;
   }
 
-  requestEnableServiceOnce() async {
-    await location.requestService();
+  Future<bool> requestEnableServiceOnce() async {
+    return await Geolocator.isLocationServiceEnabled();
   }
 
   requestBatteryOptimization() async {
@@ -49,33 +30,23 @@ class LocationService {
     }
   }
 
-  getServiceAvailability() async {
-    PermissionStatus permission = await location.hasPermission();
-    return (permission == PermissionStatus.granted ||
-            permission == PermissionStatus.grantedLimited) &&
-        await location.serviceEnabled() &&
-        await location.isBackgroundModeEnabled();
-  }
-
-  onLocationChanged(Function(LocationData) callback) {
-    location.onLocationChanged.listen((LocationData currentLocation) {
-      lastKnownLocation = currentLocation;
-      if (currentActivity != null) {
-        addStepToCurrentReccord(currentLocation);
-      }
-      callback(currentLocation);
+  onLocationChanged(Function(Position) callback) {
+    Geolocator.getPositionStream().listen((Position position) {
+      addStepToCurrentReccord(position);
+      callback(position);
     });
   }
 
   startRecording() async {
     currentActivity = Activity(null, null, []);
+    var lastKnownLocation = await Geolocator.getLastKnownPosition();
 
     if (lastKnownLocation != null) {
-      addStepToCurrentReccord(lastKnownLocation!);
+      addStepToCurrentReccord(lastKnownLocation);
     }
   }
 
-  addStepToCurrentReccord(LocationData currentLocation) {
+  addStepToCurrentReccord(Position currentLocation) {
     currentActivity?.addLocation(currentLocation);
   }
 
@@ -84,7 +55,12 @@ class LocationService {
   }
 
   Future<void> stopRecording(BuildContext context) async {
-    if (currentActivity == null || currentActivity?.locations.isEmpty == true) {
+    if (currentActivity == null) {
+      return;
+    }
+
+    if (currentActivity?.locations.isEmpty == true) {
+      currentActivity = null;
       return;
     }
 
@@ -119,25 +95,19 @@ class LocationService {
     return [LatLng(minLng, minLat), LatLng(maxLng, maxLat)];
   }
 
-  static double calculateDistance(LocationData pos1, LocationData pos2) {
-    if (pos1.latitude == null ||
-        pos1.longitude == null ||
-        pos2.latitude == null ||
-        pos2.longitude == null) {
-      return 0;
-    }
+  static double calculateDistance(Position pos1, Position pos2) {
     var p = 0.017453292519943295;
     var c = cos;
     var a = 0.5 -
-        c((pos2.latitude! - pos1.latitude!) * p) / 2 +
-        c(pos1.latitude! * p) *
-            c(pos2.latitude! * p) *
-            (1 - c((pos2.longitude! - pos1.longitude!) * p)) /
+        c((pos2.latitude - pos1.latitude) * p) / 2 +
+        c(pos1.latitude * p) *
+            c(pos2.latitude * p) *
+            (1 - c((pos2.longitude - pos1.longitude) * p)) /
             2;
     return 12742 * asin(sqrt(a));
   }
 
-  static double calculateTotalDistance(List<LocationData> locations) {
+  static double calculateTotalDistance(List<Position> locations) {
     double totalDistance = 0;
     for (int i = 0; i < locations.length - 1; i++) {
       totalDistance += calculateDistance(locations[i], locations[i + 1]);
@@ -145,15 +115,15 @@ class LocationService {
     return totalDistance;
   }
 
-  static double calculateAltitudeDifference(List<LocationData> locations) {
-    double minAltitude = locations[0].altitude!;
-    double maxAltitude = locations[0].altitude!;
+  static double calculateAltitudeDifference(List<Position> locations) {
+    double minAltitude = locations[0].altitude;
+    double maxAltitude = locations[0].altitude;
 
     for (var location in locations) {
       minAltitude =
-          location.altitude! < minAltitude ? location.altitude! : minAltitude;
+          location.altitude < minAltitude ? location.altitude : minAltitude;
       maxAltitude =
-          location.altitude! > maxAltitude ? location.altitude! : maxAltitude;
+          location.altitude > maxAltitude ? location.altitude : maxAltitude;
     }
 
     return maxAltitude - minAltitude;
